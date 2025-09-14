@@ -1,82 +1,3 @@
-"""
-NAME
-oculo_upload - Automate Oculo.ai scan uploads via Playwright
-
-
-SYNOPSIS
-python upload_loop.py [OPTIONS] FOLDER
-
-
-DESCRIPTION
-Automates the login and upload process to the Oculo.ai web app. It pairs
-files by their trailing number (_NNN) and uploads them as VID+LRV pairs.
-The script logs into the site, fills the required scan description once,
-and iterates through the selected file pairs.
-
-
-POSITIONAL ARGUMENTS
-FOLDER
-Path to the folder containing camera files (.insv, .lrv, .mp4).
-
-
-OPTIONS
---date YYYYMMDD
-Only upload files whose names contain this date (default: today).
-
-
---nnn RANGE
-Only upload files whose trailing numbers fall within the given range.
-Example: --nnn 120-140
-
-
---list
-List the planned uploads (NNN and filenames) and exit.
-
-
---move-to DIR
-After successful upload, move the files to DIR.
-
-
---headless
-Run Chromium in headless mode (no visible browser).
-
-
-ENVIRONMENT VARIABLES
-OCULO_EMAIL
-Email address used to log in.
-
-
-OCULO_PASSW
-Password used to log in.
-
-
-USAGE EXAMPLES
-# Upload today’s files from Camera01
-OCULO_EMAIL=me@example.com OCULO_PASSW=secret \
-python upload_loop.py /media/disk/DCIM/Camera01
-
-
-# Upload files from a specific date
-python upload_loop.py --date 20250816 /path/to/Camera01
-
-
-# Upload files in a number range
-python upload_loop.py --nnn 103-105 /path/to/Camera01
-
-
-# List files that would be uploaded without actually uploading
-python upload_loop.py --list /path/to/Camera01
-
-
-NOTES
-- Files are paired only if both parts exist (2 per NNN).
-- Missing or extra files are skipped with a warning.
-- The scan description is filled once per session in the format
-"Upload DDMMYYYY".
-- No interaction with the OS file picker occurs; files are set directly
-in the hidden <input type=file> used by Uppy.
-"""
-
 from pathlib import Path
 from collections import defaultdict
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
@@ -92,7 +13,27 @@ NNN_RE  = re.compile(r"_(\d+)\.[^.]+$") # trailing _NNN before extension
 # ----------------------------- CLI -----------------------------
 
 def parse_args():
-    ap = argparse.ArgumentParser(description="Automate Oculo uploads.") 
+    epilog_text = """\
+Environment:
+  Set your login credentials before running:
+    On Linux/macOS:
+      export OCULO_EMAIL="you@example.com"
+      export OCULO_PASSW="yourpassword"
+
+    On Windows (cmd):
+      set OCULO_EMAIL=you@example.com
+      set OCULO_PASSW=yourpassword
+
+    On Windows (PowerShell):
+      $env:OCULO_EMAIL="you@example.com"
+      $env:OCULO_PASSW="yourpassword"
+"""
+
+    ap = argparse.ArgumentParser(
+        description="Automate Oculo uploads.",
+        epilog=epilog_text,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("folder", type=Path, help="Folder with camera files")
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--date", help="Only upload files matching YYYYMMDD (default: today)")
@@ -101,6 +42,7 @@ def parse_args():
     ap.add_argument("--move-to", type=Path, help='After success, move both files to this folder (created if missing)')
     ap.add_argument("--headless", action="store_true", help="Run Chromium headless")
     return ap.parse_args()
+
 
 # -------------------------- Discovery --------------------------
 
