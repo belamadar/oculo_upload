@@ -1,9 +1,12 @@
 from pathlib import Path
+from dotenv import load_dotenv
 from collections import defaultdict
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 import argparse, os, re, sys, time, datetime as dt
 
-UPLOAD_URL = "https://app.eu.oculo.ai/sites/67e66bd18cd33dfb40eeab85/upload-scan"
+load_dotenv()
+missing = [k for k in ("UPLOAD_URL", "OCULO_EMAIL", "OCULO_PASSW") if not os.getenv(k)]
+
 EXTS = {".insv", ".lrv", ".mp4"}
 PAIR_TIMEOUT_MS = 12 * 60 * 1000  # 12 minutes per pair
 
@@ -156,6 +159,10 @@ def main():
     args = parse_args()
     folder = args.folder.expanduser().resolve()
     assert folder.is_dir(), f"Not a directory: {folder}"
+
+    if missing:
+    print(f"Missing env vars: {', '.join(missing)} (check .env)")
+    sys.exit(1)
 
     # Filter selection
     if args.date:
