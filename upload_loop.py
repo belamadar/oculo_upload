@@ -18,18 +18,13 @@ NNN_RE  = re.compile(r"_(\d+)\.[^.]+$") # trailing _NNN before extension
 def parse_args():
     epilog_text = """\
 Environment:
-  Set your login credentials before running:
-    On Linux/macOS:
-      export OCULO_EMAIL="you@example.com"
-      export OCULO_PASSW="yourpassword"
+  Create a .env file in the project directory (see example.env) and insert your information:
 
-    On Windows (cmd):
-      set OCULO_EMAIL=you@example.com
-      set OCULO_PASSW=yourpassword
+    UPLOAD_URL=https://app.eu.oculo.ai/sites/XXXXXXXX/upload-scan
+    OCULO_EMAIL=you@example.com
+    OCULO_PASSW=yourpassword
 
-    On Windows (PowerShell):
-      $env:OCULO_EMAIL="you@example.com"
-      $env:OCULO_PASSW="yourpassword"
+  The .env file is loaded automatically at runtime.
 """
 
     ap = argparse.ArgumentParser(
@@ -161,8 +156,8 @@ def main():
     assert folder.is_dir(), f"Not a directory: {folder}"
 
     if missing:
-    print(f"Missing env vars: {', '.join(missing)} (check .env)")
-    sys.exit(1)
+        print(f"Missing env vars: {', '.join(missing)} (check .env)")
+        sys.exit(1)
 
     # Filter selection
     if args.date:
