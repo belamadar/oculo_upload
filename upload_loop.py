@@ -5,7 +5,16 @@ from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 import argparse, os, re, sys, time, datetime as dt
 
 load_dotenv()
-missing = [k for k in ("UPLOAD_URL", "OCULO_EMAIL", "OCULO_PASSW") if not os.getenv(k)]
+REQUIRED_ENV = {
+        "UPLOAD_URL": link,
+        "OCULO_EMAIL": email,
+        "OCULO_PASSW": password,
+}
+
+missing = [k for k, v in REQUIRED_ENV.items() if not v]
+if missing:
+    print(f"Missing env vars: {','.join(missing)} (check .env)")
+    sys.exit(1)
 
 EXTS = {".insv", ".lrv", ".mp4"}
 PAIR_TIMEOUT_MS = 12 * 60 * 1000  # 12 minutes per pair
@@ -84,9 +93,9 @@ def fill_scan_description(page):
     page.wait_for_selector('input[placeholder*="description"]', timeout=10000)
     page.fill('input[placeholder*="description"]', description)
 
-def login(page, email, password):
+def login(page, upload_url, email, password):
     """Navigate to target URL and log in if the form is shown."""
-    page.goto(UPLOAD_URL, wait_until="domcontentloaded")
+    page.goto(upload_url, wait_until="domcontentloaded")
     if _see_uploader(page):
         return
     try:
@@ -154,11 +163,7 @@ def main():
     args = parse_args()
     folder = args.folder.expanduser().resolve()
     assert folder.is_dir(), f"Not a directory: {folder}"
-
-    if missing:
-        print(f"Missing env vars: {', '.join(missing)} (check .env)")
-        sys.exit(1)
-
+    
     # Filter selection
     if args.date:
         want_date = args.date
@@ -188,9 +193,10 @@ def main():
         sys.exit(0)
 
     email = os.getenv("OCULO_EMAIL")
-    password = os.getenv("OCULO_PASSW")  # set these in your shell
-    if not email or not password:
-        print("Set OCULO_EMAIL and OCULO_PASSW env vars."); sys.exit(1)
+    password = os.getenv("OCULO_PASSW")
+    upload_url = os.getenv("UPLOAD_URL")
+    if not email or not password or not upload_url:
+        print("Set UPLOAD_URL, OCULO_EMAIL and OCULO_PASSW env vars."); sys.exit(1)
 
     move_to = args.move_to
     if move_to:
@@ -201,9 +207,9 @@ def main():
         ctx = browser.new_context()
         page = ctx.new_page()
 
-        page.goto(UPLOAD_URL, wait_until="domcontentloaded")
-        login(page, email, password)
-        page.goto(UPLOAD_URL)
+        page.goto(upload_url, wait_until="domcontentloaded")
+        login(page, upload_url, email, password)
+        page.goto(upload_url)
         _wait_ready_uploader(page)
         fill_scan_description(page)
 
@@ -215,7 +221,7 @@ def main():
                         f.rename(move_to / f.name)
             except Exception as e:
                 print(f"[warn] NNN {nnn} failed: {e}. Retrying once…")
-                page.goto(UPLOAD_URL)
+                page.goto(upload_url)
                 _wait_ready_uploader(page)
                 upload_pair(page, files)
                 if move_to:
