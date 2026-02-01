@@ -5,16 +5,6 @@ from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 import argparse, os, re, sys, time, datetime as dt
 
 load_dotenv()
-REQUIRED_ENV = {
-        "UPLOAD_URL": link,
-        "OCULO_EMAIL": email,
-        "OCULO_PASSW": password,
-}
-
-missing = [k for k, v in REQUIRED_ENV.items() if not v]
-if missing:
-    print(f"Missing env vars: {','.join(missing)} (check .env)")
-    sys.exit(1)
 
 EXTS = {".insv", ".lrv", ".mp4"}
 PAIR_TIMEOUT_MS = 12 * 60 * 1000  # 12 minutes per pair
